@@ -10,16 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { InvoiceDialog } from "@/components/InvoiceDialog";
 import { createInvoice, Invoice } from "@/lib/invoiceUtils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface BookingCheckoutStepProps {
   formData: any;
@@ -47,7 +37,6 @@ export default function BookingCheckoutStep({
 
   // Dialog states
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
-  const [showDocuSignDialog, setShowDocuSignDialog] = useState(false);
   const [generatedInvoice, setGeneratedInvoice] = useState<any>(null);
   const [createdRentalData, setCreatedRentalData] = useState<any>(null);
   const [sendingDocuSign, setSendingDocuSign] = useState(false);
@@ -137,6 +126,7 @@ export default function BookingCheckoutStep({
 
     try {
       setSendingDocuSign(true);
+      toast.loading("Sending rental agreement via DocuSign...", { id: "docusign-send" });
 
       const { data, error } = await supabase.functions.invoke('create-docusign-envelope', {
         body: {
@@ -150,16 +140,15 @@ export default function BookingCheckoutStep({
       if (error) throw error;
 
       if (data?.ok) {
-        toast.success("Rental agreement sent successfully!");
+        toast.success("Rental agreement sent successfully!", { id: "docusign-send" });
       } else {
         throw new Error(data?.error || 'Failed to send DocuSign');
       }
     } catch (error: any) {
       console.error("DocuSign error:", error);
-      toast.error(error.message || "Failed to send rental agreement");
+      toast.error(error.message || "Failed to send rental agreement", { id: "docusign-send" });
     } finally {
       setSendingDocuSign(false);
-      setShowDocuSignDialog(false);
       // Proceed to payment regardless of DocuSign success
       redirectToStripePayment();
     }
@@ -564,8 +553,8 @@ export default function BookingCheckoutStep({
           onOpenChange={(open) => {
             setShowInvoiceDialog(open);
             if (!open) {
-              // When invoice dialog closes, show DocuSign confirmation
-              setShowDocuSignDialog(true);
+              // When invoice dialog closes, automatically send DocuSign
+              handleSendDocuSign();
             }
           }}
           invoice={generatedInvoice}
@@ -587,65 +576,6 @@ export default function BookingCheckoutStep({
         />
       )}
 
-      {/* DocuSign Confirmation Dialog */}
-      <AlertDialog
-        open={showDocuSignDialog}
-        onOpenChange={(open) => {
-          // Prevent closing the dialog while DocuSign is being sent
-          if (!sendingDocuSign) {
-            setShowDocuSignDialog(open);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send Rental Agreement?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Would you like to send the rental agreement to <strong>{formData.customerEmail}</strong> via DocuSign for electronic signature?
-              <br /><br />
-              You can sign the agreement now or skip and sign it later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setShowDocuSignDialog(false);
-                // Skip DocuSign and go directly to payment
-                redirectToStripePayment();
-              }}
-              disabled={isProcessing || sendingDocuSign}
-            >
-              {isProcessing && !sendingDocuSign ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Redirecting to Payment...
-                </>
-              ) : (
-                "No, Skip for Now"
-              )}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleSendDocuSign}
-              disabled={isProcessing || sendingDocuSign}
-              className="gradient-accent"
-            >
-              {sendingDocuSign ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending Agreement...
-                </>
-              ) : isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Redirecting to Payment...
-                </>
-              ) : (
-                "Yes, Send Agreement"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
