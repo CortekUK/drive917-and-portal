@@ -1,0 +1,741 @@
+import { useState, useMemo, useEffect as React_useEffect } from "react";
+import * as React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Users,
+  Plus,
+  Mail,
+  Phone,
+  Edit,
+  Search,
+  Building2,
+  TrendingUp,
+  ArrowUpDown,
+  UserPlus,
+  Eye,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
+import { AddLeadDialog } from "@/components/AddLeadDialog";
+import { CustomerFormModal } from "@/components/CustomerFormModal";
+import { TruncatedCell } from "@/components/TruncatedCell";
+import { useDebounce } from "@/hooks/useDebounce";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  status: string;
+  source: string | null;
+  notes: string | null;
+  expected_value: number | null;
+  follow_up_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export default function Pipeline() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortColumn, setSortColumn] = useState<keyof Lead>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [updatingLeadId, setUpdatingLeadId] = useState<string | null>(null);
+  const [localLeads, setLocalLeads] = useState<Lead[]>([]);
+  const [viewingLead, setViewingLead] = useState<Lead | null>(null);
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Fetch leads
+  const {
+    data: leads,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Lead[];
+    },
+  });
+
+  // Sync local state with fetched data
+  React_useEffect(() => {
+    if (leads) {
+      setLocalLeads(leads);
+    }
+  }, [leads]);
+
+  // Update lead status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({
+      leadId,
+      newStatus,
+    }: {
+      leadId: string;
+      newStatus: string;
+    }) => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ status: newStatus })
+        .eq("id", leadId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { leadId, newStatus }) => {
+      // Update local state immediately
+      setLocalLeads((prevLeads) =>
+        prevLeads.map((lead) =>
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        )
+      );
+
+      toast({
+        title: "Status updated",
+        description: "Lead status has been updated successfully.",
+      });
+
+      setUpdatingLeadId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setUpdatingLeadId(null);
+    },
+  });
+
+  const handleStatusChange = async (leadId: string, newStatus: string) => {
+    const lead = localLeads.find((l) => l.id === leadId);
+    if (!lead) return;
+
+    setUpdatingLeadId(leadId);
+
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from("leads")
+        .update({ status: newStatus })
+        .eq("id", leadId);
+
+      if (error) throw error;
+
+      // Update local state
+      setLocalLeads((prevLeads) =>
+        prevLeads.map((lead) =>
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        )
+      );
+
+      toast({
+        title: "Status updated",
+        description: "Lead status has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingLeadId(null);
+    }
+  };
+
+  const handleEdit = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsAddDialogOpen(true);
+  };
+
+  const handleDelete = async (leadId: string) => {
+    try {
+      const { error } = await supabase.from("leads").delete().eq("id", leadId);
+
+      if (error) throw error;
+
+      setLocalLeads((prevLeads) =>
+        prevLeads.filter((lead) => lead.id !== leadId)
+      );
+
+      toast({
+        title: "Lead deleted",
+        description: "Lead has been deleted successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete lead",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddCustomer = async (lead: Lead) => {
+    // Open customer form dialog with empty form
+    setIsCustomerDialogOpen(true);
+  };
+
+  const handleSort = (column: keyof Lead) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusStyles = {
+      New: {
+        backgroundColor: "#3B82F6",
+        color: "white",
+      },
+      "In Progress": {
+        backgroundColor: "#F59E0B",
+        color: "white",
+      },
+      Completed: {
+        backgroundColor: "#10B981",
+        color: "white",
+      },
+      Declined: {
+        backgroundColor: "#EF4444",
+        color: "white",
+      },
+    };
+
+    const style =
+      statusStyles[status as keyof typeof statusStyles] || statusStyles["New"];
+
+    const label = status.replace(/\s+/g, "\u00A0");
+
+    return (
+      <span
+        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+        style={{
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          display: "inline-flex",
+          whiteSpace: "nowrap",
+          wordBreak: "keep-all",
+          overflowWrap: "normal",
+          minWidth: "fit-content",
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  // Filter and sort leads
+  const filteredAndSortedLeads = useMemo(() => {
+    let filtered = localLeads || [];
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((lead) => lead.status === filterStatus);
+    }
+
+    // Apply search filter
+    if (debouncedSearchTerm) {
+      filtered = filtered.filter(
+        (lead) =>
+          lead.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+          lead.email
+            ?.toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase()) ||
+          lead.phone
+            ?.toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase()) ||
+          lead.company
+            ?.toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase()) ||
+          lead.source?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [
+    localLeads,
+    filterStatus,
+    debouncedSearchTerm,
+    sortColumn,
+    sortDirection,
+  ]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = localLeads.length;
+    const byStatus = localLeads.reduce((acc, lead) => {
+      acc[lead.status] = (acc[lead.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalValue = localLeads.reduce(
+      (sum, lead) => sum + (lead.expected_value || 0),
+      0
+    );
+
+    return {
+      total,
+      new: byStatus["New"] || 0,
+      inProgress: byStatus["In Progress"] || 0,
+      completed: byStatus["Completed"] || 0,
+      declined: byStatus["Declined"] || 0,
+      totalValue,
+      conversionRate:
+        total > 0
+          ? (((byStatus["Completed"] || 0) / total) * 100).toFixed(1)
+          : "0",
+    };
+  }, [localLeads]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">
+          Error loading leads: {(error as Error).message}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Pipeline</h1>
+          <p className="text-muted-foreground">
+            Manage your sales pipeline and track leads
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setEditingLead(null);
+            setIsAddDialogOpen(true);
+          }}
+          size="icon"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.new}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${stats.totalValue.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Conversion Rate
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.conversionRate}%</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="New">New</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="Declined">Declined</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <Card className="w-full overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 w-[30%]"
+                    onClick={() => handleSort("name")}
+                  >
+                    Name{" "}
+                    {sortColumn === "name" &&
+                      (sortDirection === "asc" ? "↑" : "↓")}
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/50 w-[20%]"
+                    onClick={() => handleSort("status")}
+                  >
+                    Status{" "}
+                    {sortColumn === "status" &&
+                      (sortDirection === "asc" ? "↑" : "↓")}
+                  </TableHead>
+                  <TableHead className="w-[50%] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  // Loading skeletons
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-32" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-8 w-32" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredAndSortedLeads.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No leads found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAndSortedLeads.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium w-[30%] max-w-0">
+                        <div className="truncate" title={lead.name}>
+                          {lead.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[20%]">
+                        {getStatusBadge(lead.status)}
+                      </TableCell>
+                      <TableCell className="w-[50%]">
+                        <div className="flex items-center justify-end gap-2">
+                          <Select
+                            value={lead.status}
+                            onValueChange={(value) =>
+                              handleStatusChange(lead.id, value)
+                            }
+                            disabled={updatingLeadId === lead.id}
+                          >
+                            <SelectTrigger
+                              className="h-8 w-[150px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent onClick={(e) => e.stopPropagation()}>
+                              <SelectItem value="New">New</SelectItem>
+                              <SelectItem value="In Progress">
+                                In Progress
+                              </SelectItem>
+                              <SelectItem value="Completed">
+                                Completed
+                              </SelectItem>
+                              <SelectItem value="Declined">Declined</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setViewingLead(lead)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleAddCustomer(lead)}
+                            disabled={lead.status !== "Completed"}
+                            className={lead.status === "Completed" ? "text-primary" : ""}
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(lead)}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(lead.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialogs */}
+      <AddLeadDialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) setEditingLead(null);
+        }}
+        lead={editingLead}
+      />
+
+      <CustomerFormModal
+        open={isCustomerDialogOpen}
+        onOpenChange={setIsCustomerDialogOpen}
+      />
+
+      {/* View Lead Details Dialog */}
+      <Dialog open={!!viewingLead} onOpenChange={() => setViewingLead(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lead Details</DialogTitle>
+            <DialogDescription>
+              View all information about this lead
+            </DialogDescription>
+          </DialogHeader>
+          {viewingLead && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </label>
+                  <p className="text-sm mt-1 truncate" title={viewingLead.name}>
+                    {viewingLead.name}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </label>
+                  <div className="mt-1">
+                    {getStatusBadge(viewingLead.status)}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </label>
+                  <p
+                    className="text-sm mt-1 truncate"
+                    title={viewingLead.email || ""}
+                  >
+                    {viewingLead.email || "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Phone
+                  </label>
+                  <p
+                    className="text-sm mt-1 truncate"
+                    title={viewingLead.phone || ""}
+                  >
+                    {viewingLead.phone || "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Company
+                  </label>
+                  <p
+                    className="text-sm mt-1 truncate"
+                    title={viewingLead.company || ""}
+                  >
+                    {viewingLead.company || "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Source
+                  </label>
+                  <p
+                    className="text-sm mt-1 truncate"
+                    title={viewingLead.source || ""}
+                  >
+                    {viewingLead.source || "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Expected Value
+                  </label>
+                  <p className="text-sm mt-1">
+                    {viewingLead.expected_value
+                      ? `$${viewingLead.expected_value.toLocaleString()}`
+                      : "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Follow-up Date
+                  </label>
+                  <p className="text-sm mt-1">
+                    {viewingLead.follow_up_date
+                      ? format(
+                          new Date(viewingLead.follow_up_date),
+                          "MMM d, yyyy"
+                        )
+                      : "—"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Created
+                  </label>
+                  <p className="text-sm mt-1">
+                    {format(new Date(viewingLead.created_at), "MMM d, yyyy")}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Updated
+                  </label>
+                  <p className="text-sm mt-1">
+                    {format(new Date(viewingLead.updated_at), "MMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
+              {viewingLead.notes && (
+                <div className="min-w-0">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Notes
+                  </label>
+                  <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                    {viewingLead.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill:*)",
+      "Bash(PGPASSWORD='12345678' psql:*)",
+      "Bash(PGPASSWORD='12345678' psql \"postgresql://postgres:12345678@db.bmhldgccxecnfbhuzspn.supabase.co:5432/postgres\" -f /tmp/complete_migration.sql)",
+      "Bash(cat:*)",
+      "Bash(pbcopy)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

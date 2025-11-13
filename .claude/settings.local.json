@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\Users\\user\\Desktop\\Web\\drive917-and-portal\\client\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

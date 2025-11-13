@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Vexa Design System
+All colors, gradients, fonts, etc should be defined here.
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Vexa Color System */
+    --background: 0 0% 100%;
+    --foreground: 210 52% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 52% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 52% 15%;
+
+    /* Primary Brand: Cyan */
+    --primary: 186 75% 45%;  /* Professional Cyan */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 186 75% 55%;
+    --primary-light: 186 75% 95%;
+
+    /* Secondary Brand: Navy Blue */
+    --secondary: 210 52% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 210 52% 15%;
+
+    /* Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 94%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 84% 96%;
+
+    /* UI Elements */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 186 75% 45%;  /* Professional Cyan focus rings */
+
+    --radius: 0.5rem;
+
+    /* RTECHGROUP Sidebar - Light Mode */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 210 52% 15%;
+    --sidebar-primary: 186 75% 45%;  /* Professional Cyan active state */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 210 52% 15%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 186 75% 45%;
+
+    /* RTECHGROUP Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(186 75% 45%), hsl(186 75% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 48%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 62%));
+    --gradient-subtle: linear-gradient(135deg, hsl(210 40% 96%), hsl(214.3 31.8% 91.4%));
+
+    /* RTECHGROUP Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210 52% 15% / 0.05);
+    --shadow-card: 0 4px 6px -1px hsl(210 52% 15% / 0.1), 0 2px 4px -1px hsl(210 52% 15% / 0.06);
+    --shadow-hover: 0 10px 15px -3px hsl(210 52% 15% / 0.1), 0 4px 6px -2px hsl(210 52% 15% / 0.05);
+
+    /* Smooth RTECHGROUP Animations */
+    --transition-all: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Glow Effects */
+    --glow-cyan-subtle: 0 0 20px -5px hsl(var(--primary) / 0.2), 0 0 40px -10px hsl(var(--primary) / 0.1);
+    --glow-cyan-intense: 0 0 30px -5px hsl(var(--primary) / 0.4), 0 0 60px -10px hsl(var(--primary) / 0.2);
+  }
+
+  .dark {
+    --background: 210 52% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 210 52% 6%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 210 52% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 186 70% 50%;  /* Professional cyan in dark mode */
+    --primary-foreground: 210 52% 4%;
+    --primary-hover: 186 70% 60%;
+    --primary-light: 186 70% 20%;
+
+    --secondary: 210 52% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 0 0% 98%;
+
+    --success: 142 76% 48%;
+    --success-foreground: 210 52% 4%;
+    --success-light: 142 76% 16%;
+
+    --warning: 38 92% 62%;
+    --warning-foreground: 210 52% 4%;
+    --warning-light: 38 92% 16%;
+
+    --destructive: 0 84% 72%;
+    --destructive-foreground: 210 52% 4%;
+    --destructive-light: 0 84% 16%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 186 70% 50%;
+
+    /* RTECHGROUP Sidebar - Dark Mode */
+    --sidebar-background: 210 52% 8%;  /* Dark navy */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 186 70% 50%;  /* Professional cyan active state */
+    --sidebar-primary-foreground: 210 52% 4%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 186 70% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(186 70% 50%), hsl(186 70% 60%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 48%), hsl(142 76% 56%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 62%), hsl(38 92% 70%));
+    --gradient-subtle: linear-gradient(135deg, hsl(217.2 32.6% 17.5%), hsl(217.2 32.6% 20%));
+
+    --shadow-sm: 0 1px 2px 0 hsl(210 52% 4% / 0.5);
+    --shadow-card: 0 4px 6px -1px hsl(210 52% 4% / 0.4), 0 2px 4px -1px hsl(210 52% 4% / 0.3);
+    --shadow-hover: 0 10px 15px -3px hsl(186 70% 50% / 0.2), 0 4px 6px -2px hsl(186 70% 50% / 0.1);
+    
+    /* Enhanced glow for dark mode */
+    --glow-cyan-subtle: 0 0 25px -5px hsl(var(--primary) / 0.3), 0 0 50px -10px hsl(var(--primary) / 0.15);
+    --glow-cyan-intense: 0 0 35px -5px hsl(var(--primary) / 0.5), 0 0 70px -10px hsl(var(--primary) / 0.25);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  /* RTECHGROUP Typography */
+  h1 {
+    @apply text-5xl font-bold;  /* 48px */
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;  /* 32px */
+  }
+
+  h3 {
+    @apply text-2xl font-medium;  /* 24px */
+  }
+
+  /* Mobile typography adjustments */
+  @media (max-width: 768px) {
+    body {
+      @apply text-base;  /* 16px on mobile */
+    }
+  }
+
+  @media (min-width: 769px) {
+    body {
+      @apply text-sm;  /* 14px on desktop */
+    }
+  }
+
+  /* Small text for badges and metadata */
+  .text-metadata {
+    @apply text-xs;  /* 12px */
+  }
+}
+
+@layer components {
+
+  /* RTECHGROUP Component Styles */
+  
+  /* Override browser autofill styling for consistent input backgrounds */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    box-shadow: inset 0 0 0 1000px hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
+  
+  /* Professional rotating border effect */
+  .rotating-border {
+    @apply relative;
+  }
+
+  .rotating-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: conic-gradient(from 0deg, transparent, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.1), transparent);
+    border-radius: inherit;
+    animation: border-rotate 6s linear infinite;
+    z-index: -1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rotating-border::before {
+      animation: none;
+      background: hsl(var(--primary) / 0.1);
+    }
+  }
+  
+  /* Buttons with purple focus rings and rounded-lg */
+  .btn-primary {
+    @apply bg-gradient-primary text-primary-foreground rounded-lg font-medium px-4 py-2 transition-all duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-2 hover:opacity-90;
+  }
+
+  /* Cards with hover scale and rounded-lg */
+  .card-hover {
+    @apply transition-all duration-200 hover:scale-102 hover:shadow-hover;
+  }
+
+  /* Badges with rounded-full */
+  .badge-status {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Forms with purple focus rings */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary focus:border-primary rounded-md border-input;
+  }
+
+  /* Tables with text-sm and hover highlighting */
+  .table-row {
+    @apply text-sm hover:bg-muted/50 transition-colors duration-200;
+  }
+
+  .table-header {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
+  }
+}

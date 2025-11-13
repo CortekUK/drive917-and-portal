@@ -1,0 +1,25 @@
+{
+  "id": "test-event-123",
+  "feature": "selfid",
+  "code": 7001,
+  "action": "submitted",
+  "vendorData": "test-customer-id",
+  "verification": {
+    "id": "test-session-123",
+    "code": 9001,
+    "person": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "dateOfBirth": "1990-01-01"
+    },
+    "document": {
+      "number": "DL12345",
+      "type": "DRIVERS_LICENSE",
+      "country": "US",
+      "validFrom": "2020-01-01",
+      "validUntil": "2025-01-01"
+    },
+    "status": "approved",
+    "decisionTime": "2025-11-11T12:00:00Z"
+  }
+}
