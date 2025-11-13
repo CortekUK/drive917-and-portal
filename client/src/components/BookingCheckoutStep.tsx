@@ -9,6 +9,7 @@ import { ChevronLeft, CreditCard, Shield, Calendar, MapPin, Clock, Car, User, Lo
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { InvoiceDialog } from "@/components/InvoiceDialog";
+import { createInvoice, Invoice } from "@/lib/invoiceUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -326,17 +327,28 @@ export default function BookingCheckoutStep({
         // Don't throw - continue with payment flow
       }
 
-      // Step 4: Generate invoice data
-      const invoiceNumber = `INV-${rental.id.substring(0, 8).toUpperCase()}`;
-      const invoiceData = {
-        invoice_number: invoiceNumber,
-        invoice_date: new Date().toISOString(),
-        due_date: formData.pickupDate, // Due on pickup date
-        subtotal: vehicleTotal,
-        tax_amount: calculateTaxesAndFees(),
-        total_amount: calculateGrandTotal(),
-        notes: `Security deposit of $${depositAmount.toLocaleString()} will be held during the rental period.`,
-      };
+      // Step 4: Create invoice in database
+      let invoice: Invoice | null = null;
+      try {
+        invoice = await createInvoice({
+          rental_id: rental.id,
+          customer_id: customer.id,
+          vehicle_id: selectedVehicle.id,
+          invoice_date: new Date(),
+          due_date: new Date(formData.pickupDate), // Due on pickup date
+          subtotal: vehicleTotal,
+          tax_amount: calculateTaxesAndFees(),
+          total_amount: calculateGrandTotal(),
+          notes: `Security deposit of $${depositAmount.toLocaleString()} will be held during the rental period.`,
+        });
+
+        console.log('✅ Invoice created successfully:', invoice.invoice_number);
+        setGeneratedInvoice(invoice);
+      } catch (invoiceError: any) {
+        console.error('❌ Failed to create invoice:', invoiceError);
+        // Don't throw - continue with payment flow even if invoice creation fails
+        // The invoice can be manually created later if needed
+      }
 
       // Store rental and invoice data for later use
       setCreatedRentalData({
@@ -344,7 +356,6 @@ export default function BookingCheckoutStep({
         rental,
         vehicle: selectedVehicle,
       });
-      setGeneratedInvoice(invoiceData);
 
       // Show invoice dialog first (before payment)
       setShowInvoiceDialog(true);
