@@ -43,7 +43,7 @@ const rentalDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters"),
   customerEmail: z.string().email("Please enter a valid email address"),
   customerPhone: z.string().regex(/^[\d\s\-\+\(\)]{10,}$/, "Please enter a valid phone number (min 10 digits)"),
-  customerType: z.enum(["Individual", "Business"], {
+  customerType: z.enum(["Individual", "Company"], {
     required_error: "Please select customer type"
   }),
 }).refine((data) => {
@@ -573,7 +573,7 @@ export default function Booking() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="Individual">Individual</SelectItem>
-                                <SelectItem value="Business">Business</SelectItem>
+                                <SelectItem value="Company">Company</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />

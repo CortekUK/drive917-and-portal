@@ -194,7 +194,7 @@ export default function BookingCheckoutStep({
       const { data: customer, error: customerError } = await supabase
         .from("customers")
         .insert({
-          type: formData.customerType, // "Individual" or "Business"
+          type: formData.customerType, // "Individual" or "Company"
           name: formData.customerName,
           email: formData.customerEmail,
           phone: formData.customerPhone,

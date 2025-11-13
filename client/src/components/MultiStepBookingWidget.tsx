@@ -881,7 +881,7 @@ const MultiStepBookingWidget = () => {
     // Validate customer type
     if (!formData.customerType || formData.customerType.trim() === "") {
       newErrors.customerType = "Please select a customer type";
-    } else if (formData.customerType !== "Individual" && formData.customerType !== "Business") {
+    } else if (formData.customerType !== "Individual" && formData.customerType !== "Company") {
       newErrors.customerType = "Invalid customer type selected";
     }
 
@@ -947,7 +947,7 @@ const MultiStepBookingWidget = () => {
     // Validate customer type
     if (!formData.customerType || formData.customerType.trim() === "") {
       newErrors.customerType = "Please select a customer type";
-    } else if (formData.customerType !== "Individual" && formData.customerType !== "Business") {
+    } else if (formData.customerType !== "Individual" && formData.customerType !== "Company") {
       newErrors.customerType = "Invalid customer type selected";
     }
 
@@ -1440,7 +1440,7 @@ const MultiStepBookingWidget = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Individual">Individual</SelectItem>
-                        <SelectItem value="Business">Business</SelectItem>
+                        <SelectItem value="Company">Company</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.customerType && <p className="text-sm text-destructive">{errors.customerType}</p>}
