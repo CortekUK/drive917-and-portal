@@ -504,12 +504,20 @@ export default function BookingCheckoutStep({
             <div className="mt-6 space-y-3">
               <Button
                 onClick={handlePayment}
-                disabled={isProcessing || !agreeTerms}
+                disabled={isProcessing || sendingDocuSign || !agreeTerms}
                 className="w-full gradient-accent hover-lift"
                 size="lg"
               >
                 {isProcessing ? (
-                  "Processing..."
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : sendingDocuSign ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending Agreement...
+                  </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
@@ -569,7 +577,15 @@ export default function BookingCheckoutStep({
       )}
 
       {/* DocuSign Confirmation Dialog */}
-      <AlertDialog open={showDocuSignDialog} onOpenChange={setShowDocuSignDialog}>
+      <AlertDialog
+        open={showDocuSignDialog}
+        onOpenChange={(open) => {
+          // Prevent closing the dialog while DocuSign is being sent
+          if (!sendingDocuSign) {
+            setShowDocuSignDialog(open);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Send Rental Agreement?</AlertDialogTitle>
